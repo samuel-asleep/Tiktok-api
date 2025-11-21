@@ -3,28 +3,509 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>TikTok Downloader</title>
-    <link rel="stylesheet" href="style.css">
+    <title>TikTok Downloader - Download Videos in SD & HD</title>
+    <meta name="description" content="Download TikTok videos in SD and HD quality. Fast, free, and easy to use.">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .loader {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #9333ea;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            animation: spin 1s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        .gradient-bg {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 50%, #f093fb 100%);
+        }
+    </style>
 </head>
-<body>
+<body class="min-h-screen gradient-bg">
+    <div class="container mx-auto px-4 py-8">
+        <!-- Header -->
+        <div class="text-center mb-8">
+            <div class="flex items-center justify-center mb-4">
+                <svg class="w-12 h-12 text-white mr-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 4v16M17 4v16M3 8h4m10 0h4M3 12h18M3 16h4m10 0h4M4 20h16a1 1 0 001-1V5a1 1 0 00-1-1H4a1 1 0 00-1 1v14a1 1 0 001 1z"></path>
+                </svg>
+                <h1 class="text-4xl font-bold text-white">TikTok Downloader</h1>
+            </div>
+            <p class="text-pink-200">Download TikTok videos in SD and HD quality</p>
+        </div>
 
-    <div class="container">
-        <nav>
-            <a href="/" class="active">Downloader</a>
-            <a href="/docs.html">API Docs</a>
-        </nav>
-        <h1>TikTok Video Downloader</h1>
-        
-        <form id="download-form">
-            <label for="tiktok-url">TikTok URL:</label>
-            <input type="url" id="tiktok-url" name="url" placeholder="https://www.tiktok.com/@username/video/..." required>
-            <button type="submit" id="submit-btn">Download</button>
-        </form>
+        <!-- Navigation Tabs -->
+        <div class="flex justify-center mb-8 gap-4">
+            <button onclick="showTab('downloader')" id="downloaderTab" class="px-6 py-3 rounded-lg font-semibold transition-all bg-white text-purple-900 shadow-lg">
+                <svg class="inline w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                </svg>
+                Downloader
+            </button>
+            <button onclick="showTab('docs')" id="docsTab" class="px-6 py-3 rounded-lg font-semibold transition-all bg-purple-800/50 text-white hover:bg-purple-700/50">
+                <svg class="inline w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                </svg>
+                API Docs
+            </button>
+        </div>
 
-        <div id="message-container"></div>
-        <div id="results-container"></div>
+        <!-- Downloader Tab -->
+        <div id="downloaderContent" class="max-w-4xl mx-auto">
+            <div class="bg-white rounded-2xl shadow-2xl p-8">
+                <h2 class="text-2xl font-bold text-gray-800 mb-6">Download TikTok Video</h2>
+                
+                <!-- Input Section -->
+                <div class="mb-6">
+                    <label class="block text-gray-700 font-medium mb-2">TikTok Video URL</label>
+                    <div class="flex gap-3">
+                        <input type="text" id="urlInput" placeholder="https://www.tiktok.com/@username/video/..." class="flex-1 px-4 py-3 border-2 border-gray-300 rounded-lg focus:outline-none focus:border-purple-500">
+                        <button onclick="fetchVideo()" id="fetchBtn" class="px-6 py-3 bg-gradient-to-r from-purple-600 to-pink-600 text-white font-semibold rounded-lg hover:from-purple-700 hover:to-pink-700 transition-all">
+                            Fetch Video
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Error Message -->
+                <div id="errorMessage" class="hidden mb-6 p-4 bg-red-50 border-l-4 border-red-500 rounded">
+                    <div class="flex items-center">
+                        <svg class="w-5 h-5 text-red-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                        </svg>
+                        <p id="errorText" class="text-red-700"></p>
+                    </div>
+                </div>
+
+                <!-- Loading -->
+                <div id="loadingSpinner" class="hidden text-center py-8">
+                    <div class="loader mx-auto mb-4"></div>
+                    <p class="text-gray-600">Fetching video information...</p>
+                </div>
+
+                <!-- Result Section -->
+                <div id="resultSection" class="hidden">
+                    <div class="border-t pt-6">
+                        <h3 class="text-xl font-bold text-gray-800 mb-4">Video Information</h3>
+                        
+                        <div class="flex flex-col md:flex-row gap-6 mb-6">
+                            <!-- Thumbnail -->
+                            <img id="videoThumbnail" src="" alt="Video thumbnail" class="w-full md:w-48 h-64 object-cover rounded-lg shadow-lg">
+                            
+                            <!-- Details -->
+                            <div class="flex-1">
+                                <div class="mb-4">
+                                    <h4 class="font-bold text-gray-800 mb-2">Description</h4>
+                                    <p id="videoDesc" class="text-gray-600"></p>
+                                </div>
+                                
+                                <div class="mb-4">
+                                    <h4 class="font-bold text-gray-800 mb-2">Author</h4>
+                                    <div class="flex items-center gap-3">
+                                        <img id="authorAvatar" src="" alt="Author" class="w-12 h-12 rounded-full">
+                                        <div>
+                                            <p id="authorNickname" class="font-semibold"></p>
+                                            <p id="authorUsername" class="text-gray-500 text-sm"></p>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="grid grid-cols-2 gap-4 mb-4">
+                                    <div>
+                                        <p class="text-gray-500 text-sm">Views</p>
+                                        <p id="viewCount" class="font-bold text-lg"></p>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-500 text-sm">Likes</p>
+                                        <p id="likeCount" class="font-bold text-lg"></p>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-500 text-sm">Comments</p>
+                                        <p id="commentCount" class="font-bold text-lg"></p>
+                                    </div>
+                                    <div>
+                                        <p class="text-gray-500 text-sm">Shares</p>
+                                        <p id="shareCount" class="font-bold text-lg"></p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Download Buttons -->
+                        <div class="bg-gradient-to-r from-purple-50 to-pink-50 p-6 rounded-lg">
+                            <h4 class="font-bold text-gray-800 mb-4">Download Options</h4>
+                            <div class="flex gap-4 flex-wrap">
+                                <a id="sdDownload" href="#" target="_blank" download class="flex items-center gap-2 px-6 py-3 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 transition-all">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                    </svg>
+                                    Download SD Quality
+                                </a>
+                                <a id="hdDownload" href="#" target="_blank" download class="flex items-center gap-2 px-6 py-3 bg-purple-600 text-white font-semibold rounded-lg hover:bg-purple-700 transition-all">
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"></path>
+                                    </svg>
+                                    Download HD Quality
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- API Documentation Tab -->
+        <div id="docsContent" class="max-w-5xl mx-auto hidden">
+            <div class="bg-white rounded-2xl shadow-2xl p-8">
+                <h2 class="text-3xl font-bold text-gray-800 mb-6">API Documentation</h2>
+                
+                <div class="space-y-8">
+                    <!-- Introduction -->
+                    <section>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-3">Introduction</h3>
+                        <p class="text-gray-600">
+                            This API allows you to download TikTok videos in both SD and HD quality. 
+                            It uses the @tobyg74/tiktok-api-dl package to fetch video information and download links.
+                        </p>
+                    </section>
+
+                    <!-- Base URL -->
+                    <section>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-3">Base URL</h3>
+                        <div class="bg-gray-100 p-4 rounded-lg font-mono text-sm" id="baseUrl">
+                            Loading...
+                        </div>
+                    </section>
+
+                    <!-- Endpoints -->
+                    <section>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4">Endpoints</h3>
+                        
+                        <!-- GET /download -->
+                        <div class="border rounded-lg p-6 mb-6">
+                            <div class="flex items-center gap-3 mb-4">
+                                <span class="px-3 py-1 bg-green-500 text-white font-semibold rounded">GET</span>
+                                <code class="text-lg font-mono">/api/download</code>
+                            </div>
+                            
+                            <p class="text-gray-600 mb-4">Fetch TikTok video information and download links.</p>
+                            
+                            <h4 class="font-bold text-gray-800 mb-2">Query Parameters</h4>
+                            <div class="bg-gray-50 p-4 rounded mb-4 overflow-x-auto">
+                                <table class="w-full text-sm">
+                                    <thead>
+                                        <tr class="border-b">
+                                            <th class="text-left py-2 px-2">Parameter</th>
+                                            <th class="text-left py-2 px-2">Type</th>
+                                            <th class="text-left py-2 px-2">Required</th>
+                                            <th class="text-left py-2 px-2">Description</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                                        <tr class="border-b">
+                                            <td class="py-2 px-2"><code>url</code></td>
+                                            <td class="py-2 px-2">string</td>
+                                            <td class="py-2 px-2">✅</td>
+                                            <td class="py-2 px-2">TikTok video URL</td>
+                                        </tr>
+                                        <tr class="border-b">
+                                            <td class="py-2 px-2"><code>version</code></td>
+                                            <td class="py-2 px-2">string</td>
+                                            <td class="py-2 px-2">❌</td>
+                                            <td class="py-2 px-2">API version (v1, v2, v3). Default: v1</td>
+                                        </tr>
+                                    </tbody>
+                                </table>
+                            </div>
+
+                            <h4 class="font-bold text-gray-800 mb-2">Example Request</h4>
+                            <div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm mb-4 overflow-x-auto">
+GET /api/download?url=https://www.tiktok.com/@username/video/1234567890
+                            </div>
+
+                            <h4 class="font-bold text-gray-800 mb-2">Example Response (200 OK)</h4>
+                            <div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+<pre>{
+  "status": "success",
+  "result": {
+    "type": "video",
+    "id": "1234567890",
+    "desc": "Video description",
+    "author": {
+      "username": "username",
+      "nickname": "Nickname",
+      "avatarThumb": ["https://..."],
+      "signature": "Bio"
+    },
+    "statistics": {
+      "playCount": 1000000,
+      "likeCount": 50000,
+      "commentCount": 1000,
+      "shareCount": 5000
+    },
+    "video": {
+      "duration": 30,
+      "playAddr": ["https://.../sd.mp4"],
+      "downloadAddr": ["https://.../hd.mp4"],
+      "cover": ["https://..."]
+    }
+  }
+}</pre>
+                            </div>
+                        </div>
+
+                        <!-- POST /download -->
+                        <div class="border rounded-lg p-6">
+                            <div class="flex items-center gap-3 mb-4">
+                                <span class="px-3 py-1 bg-blue-500 text-white font-semibold rounded">POST</span>
+                                <code class="text-lg font-mono">/api/download</code>
+                            </div>
+                            
+                            <p class="text-gray-600 mb-4">Alternative method to fetch TikTok video using POST request.</p>
+                            
+                            <h4 class="font-bold text-gray-800 mb-2">Request Body</h4>
+                            <div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm mb-4 overflow-x-auto">
+<pre>{
+  "url": "https://www.tiktok.com/@username/video/1234567890",
+  "version": "v1"
+}</pre>
+                            </div>
+
+                            <h4 class="font-bold text-gray-800 mb-2">Example cURL</h4>
+                            <div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+<pre>curl -X POST <span id="curlUrl">your-api-url</span>/api/download \
+  -H "Content-Type: application/json" \
+  -d '{"url": "https://www.tiktok.com/@username/video/1234567890"}'</pre>
+                            </div>
+                        </div>
+                    </section>
+
+                    <!-- Error Codes -->
+                    <section>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4">Error Codes</h3>
+                        <div class="bg-gray-50 p-4 rounded overflow-x-auto">
+                            <table class="w-full text-sm">
+                                <thead>
+                                    <tr class="border-b">
+                                        <th class="text-left py-2">Code</th>
+                                        <th class="text-left py-2">Description</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr class="border-b">
+                                        <td class="py-2"><code>400</code></td>
+                                        <td class="py-2">Bad Request - Missing or invalid URL</td>
+                                    </tr>
+                                    <tr class="border-b">
+                                        <td class="py-2"><code>404</code></td>
+                                        <td class="py-2">Not Found - Video not found</td>
+                                    </tr>
+                                    <tr class="border-b">
+                                        <td class="py-2"><code>429</code></td>
+                                        <td class="py-2">Too Many Requests - Rate limit exceeded</td>
+                                    </tr>
+                                    <tr class="border-b">
+                                        <td class="py-2"><code>500</code></td>
+                                        <td class="py-2">Internal Server Error</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </section>
+
+                    <!-- Rate Limiting -->
+                    <section>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-3">Rate Limiting</h3>
+                        <p class="text-gray-600">
+                            API requests are limited to 100 requests per hour per IP address. 
+                            Exceeding this limit will result in a 429 Too Many Requests response.
+                        </p>
+                    </section>
+
+                    <!-- Code Examples -->
+                    <section>
+                        <h3 class="text-2xl font-bold text-gray-800 mb-4">Code Examples</h3>
+                        
+                        <div class="space-y-4">
+                            <div>
+                                <h4 class="font-bold text-gray-800 mb-2">JavaScript/Fetch</h4>
+                                <div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+<pre>const url = 'https://www.tiktok.com/@username/video/1234567890';
+
+fetch(`/api/download?url=${encodeURIComponent(url)}`)
+  .then(response => response.json())
+  .then(data => {
+    console.log(data);
+    if (data.status === 'success') {
+      const hdVideo = data.result.video.downloadAddr[0];
+      console.log('HD Video URL:', hdVideo);
+    }
+  })
+  .catch(error => console.error('Error:', error));</pre>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4 class="font-bold text-gray-800 mb-2">Python</h4>
+                                <div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+<pre>import requests
+
+url = "https://your-api-url.com/api/download"
+params = {"url": "https://www.tiktok.com/@username/video/1234567890"}
+
+response = requests.get(url, params=params)
+data = response.json()
+
+if data['status'] == 'success':
+    hd_video = data['result']['video']['downloadAddr'][0]
+    print(f"HD Video URL: {hd_video}")</pre>
+                                </div>
+                            </div>
+
+                            <div>
+                                <h4 class="font-bold text-gray-800 mb-2">Node.js/Axios</h4>
+                                <div class="bg-gray-900 text-green-400 p-4 rounded-lg font-mono text-sm overflow-x-auto">
+<pre>const axios = require('axios');
+
+async function downloadTikTok(url) {
+  try {
+    const response = await axios.get('/api/download', {
+      params: { url }
+    });
+    
+    if (response.data.status === 'success') {
+      const hdVideo = response.data.result.video.downloadAddr[0];
+      console.log('HD Video URL:', hdVideo);
+    }
+  } catch (error) {
+    console.error('Error:', error.message);
+  }
+}
+
+downloadTikTok('https://www.tiktok.com/@username/video/1234567890');</pre>
+                                </div>
+                            </div>
+                        </div>
+                    </section>
+                </div>
+            </div>
+        </div>
     </div>
 
-    <script src="app.js"></script>
+    <script>
+        // Set API base URL dynamically
+        window.addEventListener('DOMContentLoaded', () => {
+            const baseUrl = window.location.origin;
+            document.getElementById('baseUrl').textContent = baseUrl + '/api';
+            document.getElementById('curlUrl').textContent = baseUrl;
+        });
+
+        function showTab(tab) {
+            const downloaderContent = document.getElementById('downloaderContent');
+            const docsContent = document.getElementById('docsContent');
+            const downloaderTab = document.getElementById('downloaderTab');
+            const docsTab = document.getElementById('docsTab');
+
+            if (tab === 'downloader') {
+                downloaderContent.classList.remove('hidden');
+                docsContent.classList.add('hidden');
+                downloaderTab.className = 'px-6 py-3 rounded-lg font-semibold transition-all bg-white text-purple-900 shadow-lg';
+                docsTab.className = 'px-6 py-3 rounded-lg font-semibold transition-all bg-purple-800/50 text-white hover:bg-purple-700/50';
+            } else {
+                downloaderContent.classList.add('hidden');
+                docsContent.classList.remove('hidden');
+                downloaderTab.className = 'px-6 py-3 rounded-lg font-semibold transition-all bg-purple-800/50 text-white hover:bg-purple-700/50';
+                docsTab.className = 'px-6 py-3 rounded-lg font-semibold transition-all bg-white text-purple-900 shadow-lg';
+            }
+        }
+
+        function formatNumber(num) {
+            if (num >= 1000000) return (num / 1000000).toFixed(1) + 'M';
+            if (num >= 1000) return (num / 1000).toFixed(1) + 'K';
+            return num.toString();
+        }
+
+        async function fetchVideo() {
+            const urlInput = document.getElementById('urlInput');
+            const url = urlInput.value.trim();
+            const errorMessage = document.getElementById('errorMessage');
+            const errorText = document.getElementById('errorText');
+            const loadingSpinner = document.getElementById('loadingSpinner');
+            const resultSection = document.getElementById('resultSection');
+            const fetchBtn = document.getElementById('fetchBtn');
+
+            // Reset UI
+            errorMessage.classList.add('hidden');
+            resultSection.classList.add('hidden');
+
+            // Validation
+            if (!url) {
+                errorText.textContent = 'Please enter a TikTok URL';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+
+            if (!url.includes('tiktok.com')) {
+                errorText.textContent = 'Please enter a valid TikTok URL';
+                errorMessage.classList.remove('hidden');
+                return;
+            }
+
+            // Show loading
+            loadingSpinner.classList.remove('hidden');
+            fetchBtn.disabled = true;
+            fetchBtn.textContent = 'Loading...';
+
+            try {
+                const response = await fetch(`/api/download?url=${encodeURIComponent(url)}`);
+                const data = await response.json();
+
+                if (data.status === 'error') {
+                    throw new Error(data.message || 'Failed to fetch video');
+                }
+
+                // Populate result
+                const result = data.result;
+                
+                // Get first element from arrays or use direct value
+                const getFirstOrValue = (val) => Array.isArray(val) ? val[0] : val;
+
+                document.getElementById('videoThumbnail').src = getFirstOrValue(result.video?.cover) || getFirstOrValue(result.cover) || '';
+                document.getElementById('videoDesc').textContent = result.desc || 'No description';
+                document.getElementById('authorAvatar').src = getFirstOrValue(result.author?.avatarThumb) || '';
+                document.getElementById('authorNickname').textContent = result.author?.nickname || 'Unknown';
+                document.getElementById('authorUsername').textContent = '@' + (result.author?.username || 'unknown');
+                
+                document.getElementById('viewCount').textContent = formatNumber(result.statistics?.playCount || 0);
+                document.getElementById('likeCount').textContent = formatNumber(result.statistics?.likeCount || 0);
+                document.getElementById('commentCount').textContent = formatNumber(result.statistics?.commentCount || 0);
+                document.getElementById('shareCount').textContent = formatNumber(result.statistics?.shareCount || 0);
+
+                const sdVideo = getFirstOrValue(result.video?.playAddr) || '';
+                const hdVideo = getFirstOrValue(result.video?.downloadAddr) || sdVideo;
+
+                document.getElementById('sdDownload').href = sdVideo;
+                document.getElementById('hdDownload').href = hdVideo;
+
+                resultSection.classList.remove('hidden');
+            } catch (error) {
+                errorText.textContent = error.message;
+                errorMessage.classList.remove('hidden');
+            } finally {
+                loadingSpinner.classList.add('hidden');
+                fetchBtn.disabled = false;
+                fetchBtn.textContent = 'Fetch Video';
+            }
+        }
+
+        // Allow Enter key to submit
+        document.getElementById('urlInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                fetchVideo();
+            }
+        });
+    </script>
 </body>
 </html>
